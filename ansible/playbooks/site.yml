@@ -1,0 +1,5 @@
+- name: Common setup
+  hosts: local
+  gather_facts: false
+  roles:
+    - common

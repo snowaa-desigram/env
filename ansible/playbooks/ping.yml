@@ -1,0 +1,15 @@
+- name: Check local host
+  hosts: laptop
+  gather_facts: false
+  tasks:
+    - name: Ping
+      ansible.builtin.ping:
+
+    - name: Docker is installed
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Show docker version
+      ansible.builtin.debug:
+        msg: "{{ docker_version.stdout }}"
