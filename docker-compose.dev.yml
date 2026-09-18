@@ -91,7 +91,6 @@ services:
     volumes:
       - ../frontend:/app
       - /app/node_modules
-    environment:
 
   jaeger:
     image: jaegertracing/jaeger:latest

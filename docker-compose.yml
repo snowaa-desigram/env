@@ -69,6 +69,7 @@ services:
 
   # Symfony (DDD) — единственный публичный API. Stateless: масштабируется репликами.
   core:
+    image: desigram/core
     build:
       context: ../backend/core
       dockerfile: ../../enviropment/php/Dockerfile
@@ -117,6 +118,7 @@ services:
 
   # Обработчик очереди (Messenger async → Redis). Тяжёлые команды выполняются здесь, не в HTTP.
   core-worker:
+    image: desigram/core
     build:
       context: ../backend/core
       dockerfile: ../../enviropment/php/Dockerfile
@@ -137,6 +139,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: desigram/frontend
     build:
       context: ../frontend
       dockerfile: ../enviropment/nextjs/Dockerfile
