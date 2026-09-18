@@ -64,6 +64,11 @@ services:
       APP_ENV: dev
     volumes:
       - ../backend/core:/app
+    # vendor/ ставит core при старте (composer install) — worker ждёт его, иначе стартует раньше vendor/
+    depends_on:
+      core:
+        condition: service_healthy
+    command: ["bin/console", "messenger:consume", "async", "-vv", "--time-limit=3600", "--memory-limit=256M"]
 
   rabbitmq:
     ports:
