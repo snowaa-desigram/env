@@ -3,8 +3,10 @@ FROM dunglas/frankenphp:1-php8.4 AS base
 
 WORKDIR /app
 
-# grpc/protobuf собираются из исходников — первый build долгий (~10-20 мин), дальше слой в кеше
-RUN install-php-extensions grpc protobuf
+# grpc собирается из исходников — первый build долгий (~10-20 мин), поэтому отдельным слоем: он кешируется,
+# даже если следующий шаг упадёт. Версии пинятся (см. platform в core/composer.json).
+RUN install-php-extensions grpc-1.84.0
+RUN install-php-extensions protobuf-5.36.2
 RUN install-php-extensions amqp redis intl opcache pdo_mysql zip
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
