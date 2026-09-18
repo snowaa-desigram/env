@@ -1,0 +1,15 @@
+# Python gRPC-микросервис: telegram (внутренний, без Traefik)
+services:
+  telegram:
+    build:
+      context: ../../backend/services/python
+      dockerfile: ../../../enviropment/python/Dockerfile
+      args:
+        SERVICE: telegram
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+    deploy:
+      replicas: ${TELEGRAM_REPLICAS:-1}
+    networks:
+      - app
+    restart: unless-stopped

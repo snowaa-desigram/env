@@ -1,40 +1,30 @@
+# Go gRPC-микросервис (go-zero). ENTRYPOINT_PATH=./cmd/<name>, ENTRYPOINT_NAME=<name>
 FROM golang:alpine AS builder
-
-LABEL stage=gobuilder
 
 ARG ENTRYPOINT_PATH
 ARG ENTRYPOINT_NAME
-ARG PORT
+ARG TARGETARCH
 
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-
-RUN echo ${ENTRYPOINT_PATH} ${ENTRYPOINT_NAME} ${PORT}
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH}
 
 WORKDIR /build
 
-RUN echo "building code..."
-
-COPY go.mod ./
-COPY go.sum* ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-RUN go build -o ${ENTRYPOINT_NAME} ${ENTRYPOINT_PATH}
+RUN go build -o /out/server ${ENTRYPOINT_PATH} \
+ && cp -r ${ENTRYPOINT_PATH}/etc /out/etc
 
 FROM alpine:latest AS runner
 
 ARG ENTRYPOINT_NAME
-ARG PORT
+ENV SERVICE_NAME=${ENTRYPOINT_NAME}
 
 WORKDIR /app
 
-RUN echo "copying binary..."
+COPY --from=builder /out/server ./server
+COPY --from=builder /out/etc ./etc
 
-COPY --from=builder /build/${ENTRYPOINT_NAME} /app/${ENTRYPOINT_NAME}
-
-RUN echo "running server..."
-
-CMD ["./server"]
-
-EXPOSE ${PORT}
+CMD ["sh", "-c", "./server -f etc/${SERVICE_NAME}.yaml"]

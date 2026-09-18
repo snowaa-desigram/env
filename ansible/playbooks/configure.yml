@@ -1,0 +1,8 @@
+# Только сгенерировать enviropment/.env из group_vars (без docker compose up)
+- name: Render configuration
+  hosts: all
+  vars:
+    app_up: false
+    app_fetch: false
+  roles:
+    - app

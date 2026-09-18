@@ -1,0 +1,36 @@
+# ЕДИНАЯ ТОЧКА НАСТРОЙКИ. Отсюда генерируется enviropment/.env (make configure).
+# Секреты — в inventory/group_vars/<group>/vault.yml (ansible-vault), см. vault.yml.example.
+
+project_name: desigram
+repo_url: git@github.com:snowaa-desigram/desigram.git
+repo_version: main
+
+domain: desigram.localhost
+public_api_url: "https://api.{{ domain }}"
+http_port: 80
+https_port: 443
+acme_email: "admin@{{ domain }}"
+
+mysql_database: desigram
+mysql_user: desigram
+mysql_password: "{{ vault_mysql_password | default('desigram') }}"
+mysql_root_password: "{{ vault_mysql_root_password | default('root') }}"
+app_secret: "{{ vault_app_secret | default('change_me') }}"
+telegram_bot_token: "{{ vault_telegram_bot_token | default('') }}"
+rabbitmq_user: desigram
+rabbitmq_password: "{{ vault_rabbitmq_password | default('desigram') }}"
+
+# Go-сервисы (go-zero): режим и OTLP-endpoint для трейсов (пусто — выключено)
+go_mode: pro
+otel_endpoint: ""
+
+# Масштабирование: реплики stateless-сервисов (Traefik балансирует между ними)
+core_replicas: 1
+core_worker_replicas: 1
+service_replicas:
+  ping: 1
+  telegram: 1
+
+# Rate limit на публичный API (req/s на IP, burst)
+core_rate_limit: 50
+core_rate_burst: 100

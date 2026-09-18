@@ -1,0 +1,26 @@
+- name: Fetch repository (with submodules)
+  ansible.builtin.git:
+    repo: "{{ repo_url }}"
+    dest: "{{ deploy_dir }}"
+    version: "{{ repo_version }}"
+    recursive: true
+    track_submodules: true
+    force: true
+  when: app_fetch
+
+- name: Render enviropment/.env
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ deploy_dir }}/enviropment/.env"
+    mode: "0600"
+
+- name: Build and start stack
+  ansible.builtin.command:
+    cmd: >
+      docker compose
+      -f enviropment/docker-compose.yml
+      -f enviropment/docker-compose.{{ compose_env }}.yml
+      up -d --build --remove-orphans
+    chdir: "{{ deploy_dir }}"
+  when: app_up | default(true)
+  changed_when: true

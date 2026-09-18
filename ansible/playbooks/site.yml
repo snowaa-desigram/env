@@ -1,5 +1,11 @@
-- name: Common setup
-  hosts: local
-  gather_facts: false
+# Полный разворот: сервер с нуля -> рабочий стек
+- name: Provision servers
+  hosts: prod
+  become: true
   roles:
-    - common
+    - docker
+
+- name: Deploy application
+  hosts: all
+  roles:
+    - app

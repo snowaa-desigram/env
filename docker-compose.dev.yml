@@ -28,11 +28,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=desigram
-      - traefik.http.routers.dashboard.rule=Host(`traefik.desigram.localhost`)
+      - traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.tls=true
       - traefik.http.routers.dashboard.service=api@internal
-      - traefik.http.routers.metrics.rule=Host(`traefik.desigram.localhost`) && PathPrefix(`/metrics`)
+      - traefik.http.routers.metrics.rule=Host(`traefik.${DOMAIN}`) && PathPrefix(`/metrics`)
       - traefik.http.routers.metrics.entrypoints=websecure
       - traefik.http.routers.metrics.tls=true
       - traefik.http.routers.metrics.service=prometheus@internal
@@ -46,6 +46,44 @@ services:
     ports:
       - "3307:3306"
 
+  core:
+    build:
+      target: dev
+    environment:
+      APP_ENV: dev
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+    volumes:
+      - ../backend/core:/app
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  core-worker:
+    build:
+      target: dev
+    environment:
+      APP_ENV: dev
+    volumes:
+      - ../backend/core:/app
+
+  rabbitmq:
+    ports:
+      - "5673:5672"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=desigram
+      - traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.${DOMAIN}`)
+      - traefik.http.routers.rabbitmq.entrypoints=websecure
+      - traefik.http.routers.rabbitmq.tls=true
+      - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
+
+  ping:
+    ports:
+      - "50051:50051"
+
+  telegram:
+    ports:
+      - "50052:50051"
+
   frontend:
     build:
       context: ../frontend
@@ -54,7 +92,6 @@ services:
       - ../frontend:/app
       - /app/node_modules
     environment:
-      NEXT_PUBLIC_API_URL: https://api.desigram.localhost:8443
 
   jaeger:
     image: jaegertracing/jaeger:latest
@@ -63,7 +100,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=desigram
-      - traefik.http.routers.jaeger.rule=Host(`jaeger.desigram.localhost`)
+      - traefik.http.routers.jaeger.rule=Host(`jaeger.${DOMAIN}`)
       - traefik.http.routers.jaeger.entrypoints=websecure
       - traefik.http.routers.jaeger.tls=true
       - traefik.http.services.jaeger.loadbalancer.server.port=16686
@@ -81,7 +118,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=desigram
-      - traefik.http.routers.prometheus.rule=Host(`prometheus.desigram.localhost`)
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.routers.prometheus.tls=true
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
@@ -93,19 +130,23 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_SERVER_ROOT_URL: https://grafana.desigram.localhost:8443
+      GF_SERVER_ROOT_URL: https://grafana.${DOMAIN}:${HTTPS_PORT:-443}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
     labels:
       - traefik.enable=true
       - traefik.docker.network=desigram
-      - traefik.http.routers.grafana.rule=Host(`grafana.desigram.localhost`)
+      - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)
       - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.tls=true
       - traefik.http.services.grafana.loadbalancer.server.port=3000
     networks:
       - app
+
+  redis:
+    ports:
+      - "6380:6379"
 
 volumes:
   prometheus_data:

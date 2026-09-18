@@ -1,1 +1,7 @@
+compose_env: prod
 deploy_dir: /opt/desigram
+app_fetch: true
+
+domain: desigram.com
+core_replicas: 2
+core_worker_replicas: 2

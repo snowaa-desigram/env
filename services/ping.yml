@@ -1,0 +1,17 @@
+# Go gRPC-микросервис: ping (внутренний, без Traefik)
+services:
+  ping:
+    build:
+      context: ../../backend/services/go
+      dockerfile: ../../../enviropment/go/Dockerfile
+      args:
+        ENTRYPOINT_PATH: ./cmd/ping
+        ENTRYPOINT_NAME: ping
+    environment:
+      MODE: ${GO_MODE:-pro}
+      OTEL_ENDPOINT: ${OTEL_ENDPOINT:-}
+    deploy:
+      replicas: ${PING_REPLICAS:-1}
+    networks:
+      - app
+    restart: unless-stopped

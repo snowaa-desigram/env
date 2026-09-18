@@ -1,0 +1,5 @@
+# Обновление уже настроенного окружения
+- name: Deploy application
+  hosts: all
+  roles:
+    - app

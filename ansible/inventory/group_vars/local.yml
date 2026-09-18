@@ -1,1 +1,12 @@
-deploy_dir: /tmp/desigram
+# Локальная разработка: репозиторий = текущий checkout, compose dev-профиль.
+compose_env: dev
+deploy_dir: "{{ inventory_dir }}/../../.."
+app_fetch: false
+
+domain: desigram.localhost
+http_port: 8088
+https_port: 8443
+public_api_url: "https://api.{{ domain }}:{{ https_port }}"
+
+go_mode: dev
+otel_endpoint: http://jaeger:4318/v1/traces
