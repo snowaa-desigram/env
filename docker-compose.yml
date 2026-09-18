@@ -125,6 +125,14 @@ services:
       target: prod
     command: ["bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=256M"]
     environment: *core-env
+    # Переопределяет HEALTHCHECK базового образа FrankenPHP (curl :2019 — у worker'а нет Caddy).
+    # messenger:stats проверяет и PHP, и связь с RabbitMQ.
+    healthcheck:
+      test: ["CMD", "bin/console", "messenger:stats", "async"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     deploy:
       replicas: ${CORE_WORKER_REPLICAS:-1}
     depends_on:
