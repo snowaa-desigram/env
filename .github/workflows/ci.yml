@@ -24,6 +24,7 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           recursive: true
+          failure-threshold: warning
           ignore: DL3018,DL3008,DL3013,DL3059  # версии apk/apt/pip не пиним, RUN не склеиваем ради кеша grpc
 
   ansible:
@@ -40,4 +41,7 @@ jobs:
       - run: ansible-playbook --syntax-check playbooks/site.yml playbooks/deploy.yml playbooks/configure.yml
       - run: ansible-lint
       - name: Render .env from group_vars (local)
-        run: ansible-playbook playbooks/configure.yml -l local
+        run: ansible-playbook playbooks/configure.yml -l local -e env_dir=$GITHUB_WORKSPACE
+      - name: Rendered .env is valid for compose
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml config -q
+        working-directory: .

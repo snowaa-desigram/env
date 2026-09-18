@@ -1,5 +1,5 @@
 # Go gRPC-микросервис (go-zero). ENTRYPOINT_PATH=./cmd/<name>, ENTRYPOINT_NAME=<name>
-FROM golang:alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 ARG ENTRYPOINT_PATH
 ARG ENTRYPOINT_NAME
@@ -17,7 +17,7 @@ COPY . .
 RUN go build -o /out/server ${ENTRYPOINT_PATH} \
  && cp -r ${ENTRYPOINT_PATH}/etc /out/etc
 
-FROM alpine:latest AS runner
+FROM alpine:3.22 AS runner
 
 ARG ENTRYPOINT_NAME
 ENV SERVICE_NAME=${ENTRYPOINT_NAME}

@@ -11,16 +11,16 @@
 - name: Render enviropment/.env
   ansible.builtin.template:
     src: env.j2
-    dest: "{{ deploy_dir }}/enviropment/.env"
+    dest: "{{ env_dir }}/.env"
     mode: "0600"
 
 - name: Build and start stack
   ansible.builtin.command:
     cmd: >
       docker compose
-      -f enviropment/docker-compose.yml
-      -f enviropment/docker-compose.{{ compose_env }}.yml
+      -f docker-compose.yml
+      -f docker-compose.{{ compose_env }}.yml
       up -d --build --remove-orphans
-    chdir: "{{ deploy_dir }}"
+    chdir: "{{ env_dir }}"
   when: app_up | default(true)
   changed_when: true

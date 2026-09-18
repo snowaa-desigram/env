@@ -22,4 +22,4 @@ RUN uv sync --frozen --package ${SERVICE}-service --no-dev
 
 EXPOSE 50051
 
-CMD sh -c ".venv/bin/${SERVICE}-service"
+CMD ["sh", "-c", ".venv/bin/${SERVICE}-service"]

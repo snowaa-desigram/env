@@ -2,6 +2,8 @@
 # Секреты — в inventory/group_vars/<group>/vault.yml (ansible-vault), см. vault.yml.example.
 
 project_name: desigram
+# папка с compose-файлами (в монорепе — сабмодуль enviropment; в CI репозитория env — его корень)
+env_dir: "{{ deploy_dir }}/enviropment"
 repo_url: git@github.com:snowaa-desigram/desigram.git
 repo_version: main
 
