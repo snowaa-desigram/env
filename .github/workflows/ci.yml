@@ -1,0 +1,43 @@
+# CI окружения: валидность compose (dev/prod), Dockerfile'ов и Ansible.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - name: Validate dev stack
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml config -q
+      - name: Validate prod stack
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
+
+  dockerfiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          ignore: DL3018,DL3008,DL3013,DL3059  # версии apk/apt/pip не пиним, RUN не склеиваем ради кеша grpc
+
+  ansible:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ansible-core ansible-lint
+      - run: ansible-playbook --syntax-check playbooks/site.yml playbooks/deploy.yml playbooks/configure.yml
+      - run: ansible-lint
+      - name: Render .env from group_vars (local)
+        run: ansible-playbook playbooks/configure.yml -l local

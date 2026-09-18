@@ -1,0 +1,7 @@
+profile: moderate
+skip_list:
+  - yaml[line-length]
+  - name[casing]
+  - package-latest
+  - risky-shell-pipe
+  - no-changed-when   # docker compose up — всегда "changed"
