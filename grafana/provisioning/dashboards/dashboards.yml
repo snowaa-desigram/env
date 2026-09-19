@@ -1,0 +1,11 @@
+# Дашборды из этой папки подхватываются Grafana при старте (make dev) — импортировать руками не нужно.
+apiVersion: 1
+providers:
+  - name: desigram
+    folder: ""
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false
