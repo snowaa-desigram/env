@@ -1,7 +1,13 @@
 # ЕДИНАЯ ТОЧКА НАСТРОЙКИ. Отсюда генерируется enviropment/.env (make configure).
 # Секреты — в inventory/group_vars/<group>/vault.yml (ansible-vault), см. vault.yml.example.
+#
+# Переименование проекта — три переменные:
+#   project_name — техническое имя: docker-сеть, имена образов (<project_name>/core), папка деплоя
+#   app_name     — то, что видит пользователь: заголовок сайта, тема писем
+#   domain       — домен (local.yml / prod.yml переопределяют); от него считаются api.<domain>, почта, ACME, CORS
 
 project_name: desigram
+app_name: Desigram
 # папка с compose-файлами (в монорепе — сабмодуль enviropment; в CI репозитория env — его корень)
 env_dir: "{{ deploy_dir }}/enviropment"
 repo_url: git@github.com:snowaa-desigram/desigram.git

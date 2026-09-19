@@ -3,6 +3,7 @@
 x-auth-env: &auth-env
   MODE: ${GO_MODE:-pro}
   OTEL_ENDPOINT: ${OTEL_ENDPOINT:-}
+  APP_NAME: ${APP_NAME}
   JWT_SECRET: ${JWT_SECRET}
   MYSQL_DSN: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(database:3306)/${MYSQL_DATABASE}?parseTime=true&charset=utf8mb4&loc=UTC
   REDIS_ADDR: redis:6379
@@ -16,7 +17,7 @@ x-auth-env: &auth-env
 services:
   # Применяет миграции (GORM AutoMigrate) и завершается; реплики auth стартуют после него — гонок нет.
   auth-migrate:
-    image: desigram/auth
+    image: ${PROJECT_NAME:-desigram}/auth
     build: &auth-build
       context: ../../backend/services/go
       dockerfile: ../../../enviropment/go/Dockerfile
@@ -33,7 +34,7 @@ services:
     restart: "no"
 
   auth:
-    image: desigram/auth
+    image: ${PROJECT_NAME:-desigram}/auth
     build: *auth-build
     environment: *auth-env
     deploy:
@@ -51,7 +52,7 @@ services:
         condition: service_healthy
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       # правило длиннее, чем у core (Host && PathPrefix) → приоритет выше: /api/auth/* уходит сюда
       - traefik.http.routers.auth.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/auth`)
       - traefik.http.routers.auth.entrypoints=websecure

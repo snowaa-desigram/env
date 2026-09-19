@@ -70,13 +70,14 @@ services:
 
   # Symfony (DDD) — публичный API (кроме /api/auth/* — это auth). Stateless: масштабируется репликами.
   core:
-    image: desigram/core
+    image: ${PROJECT_NAME:-desigram}/core
     build:
       context: ../backend/core
       dockerfile: ../../enviropment/php/Dockerfile
       target: prod
     environment: &core-env
       APP_ENV: prod
+      APP_NAME: ${APP_NAME}
       APP_SECRET: ${APP_SECRET}
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@database:3306/${MYSQL_DATABASE}?serverVersion=9.4&charset=utf8mb4
       REDIS_URL: redis://redis:6379
@@ -104,7 +105,7 @@ services:
         condition: service_healthy
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.core.rule=Host(`api.${DOMAIN}`)
       - traefik.http.routers.core.entrypoints=websecure
       - traefik.http.routers.core.tls=true
@@ -121,7 +122,7 @@ services:
 
   # Обработчик очереди (Messenger async → Redis). Тяжёлые команды выполняются здесь, не в HTTP.
   core-worker:
-    image: desigram/core
+    image: ${PROJECT_NAME:-desigram}/core
     build:
       context: ../backend/core
       dockerfile: ../../enviropment/php/Dockerfile
@@ -150,21 +151,23 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: desigram/frontend
+    image: ${PROJECT_NAME:-desigram}/frontend
     build:
       context: ../frontend
       dockerfile: ../enviropment/nextjs/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+        NEXT_PUBLIC_APP_NAME: ${APP_NAME}
     environment:
       PORT: "3000"
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+      NEXT_PUBLIC_APP_NAME: ${APP_NAME}
       # для SSR/route handlers — напрямую в core по docker-сети
       API_URL_INTERNAL: http://core:8080
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)
       - traefik.http.routers.frontend.entrypoints=websecure
       - traefik.http.routers.frontend.tls=true
@@ -180,5 +183,5 @@ volumes:
 
 networks:
   app:
-    name: desigram
+    name: ${PROJECT_NAME:-desigram}
     driver: bridge

@@ -27,7 +27,7 @@ services:
       - jaeger
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.tls=true
@@ -75,7 +75,7 @@ services:
       - "5673:5672"
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.${DOMAIN}`)
       - traefik.http.routers.rabbitmq.entrypoints=websecure
       - traefik.http.routers.rabbitmq.tls=true
@@ -106,7 +106,7 @@ services:
       retries: 5
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.mailpit.rule=Host(`mail.${DOMAIN}`)
       - traefik.http.routers.mailpit.entrypoints=websecure
       - traefik.http.routers.mailpit.tls=true
@@ -128,7 +128,7 @@ services:
       COLLECTOR_OTLP_ENABLED: "true"
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.jaeger.rule=Host(`jaeger.${DOMAIN}`)
       - traefik.http.routers.jaeger.entrypoints=websecure
       - traefik.http.routers.jaeger.tls=true
@@ -146,7 +146,7 @@ services:
       - --storage.tsdb.path=/prometheus
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.routers.prometheus.tls=true
@@ -165,7 +165,7 @@ services:
       - grafana_data:/var/lib/grafana
     labels:
       - traefik.enable=true
-      - traefik.docker.network=desigram
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
       - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)
       - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.tls=true

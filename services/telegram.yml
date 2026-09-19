@@ -1,7 +1,7 @@
 # Python gRPC-микросервис: telegram (внутренний, без Traefik)
 services:
   telegram:
-    image: desigram/telegram
+    image: ${PROJECT_NAME:-desigram}/telegram
     build:
       context: ../../backend/services/python
       dockerfile: ../../../enviropment/python/Dockerfile

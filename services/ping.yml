@@ -1,7 +1,7 @@
 # Go gRPC-микросервис: ping (внутренний, без Traefik)
 services:
   ping:
-    image: desigram/ping
+    image: ${PROJECT_NAME:-desigram}/ping
     build:
       context: ../../backend/services/go
       dockerfile: ../../../enviropment/go/Dockerfile
