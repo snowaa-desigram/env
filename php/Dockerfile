@@ -3,9 +3,13 @@ FROM dunglas/frankenphp:1-php8.4 AS base
 
 WORKDIR /app
 
-# grpc собирается из исходников — первый build долгий (~10-20 мин), поэтому отдельным слоем: он кешируется,
+# grpc собирается из исходников — первый build долгий (~20-30 мин), поэтому отдельным слоем: он кешируется,
 # даже если следующий шаг упадёт. Версии пинятся (см. platform в core/composer.json).
-RUN install-php-extensions grpc-1.84.0
+# Параллелизм make ограничен: по умолчанию install-php-extensions берёт nproc (-j10), и компиляция C++ grpc
+# съедает >8 ГБ — Docker Desktop падает с "cannot allocate memory". 2 потока ≈ 2-3 ГБ. Переопределить:
+# docker compose build --build-arg GRPC_BUILD_JOBS=4 core
+ARG GRPC_BUILD_JOBS=2
+RUN IPE_PROCESSOR_COUNT=${GRPC_BUILD_JOBS} install-php-extensions grpc-1.84.0
 RUN install-php-extensions protobuf-5.36.2
 RUN install-php-extensions amqp redis intl opcache pdo_mysql zip
 
