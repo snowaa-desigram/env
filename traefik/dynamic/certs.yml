@@ -1,0 +1,8 @@
+# Локальные mkcert-сертификаты — только когда LOCAL_CERTS=1 (docker-compose.dev.yml). В prod файл рендерится пустым,
+# сертификаты выдаёт Let's Encrypt (docker-compose.prod.yml).
+{{ if eq (env "LOCAL_CERTS") "1" }}
+tls:
+  certificates:
+    - certFile: /local.pem
+      keyFile: /local-key.key
+{{ end }}
