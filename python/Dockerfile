@@ -7,9 +7,11 @@ ARG UV_VERSION=0.9.30
 RUN pip install --no-cache-dir "uv==${UV_VERSION}"
 
 ARG SERVICE
+# UV_HTTP_TIMEOUT: дефолтные 30 с не хватает на grpcio (6+ МБ) при медленной сети — сборка падала на uv sync
 ENV SERVICE=${SERVICE} \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_HTTP_TIMEOUT=300 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app

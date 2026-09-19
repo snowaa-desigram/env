@@ -58,6 +58,8 @@ services:
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
     volumes:
       - ../backend/core:/app
+      # графы deptrac/phpmetrics для make archviz (var/archviz в корне монорепо)
+      - ../var/archviz/core:/archviz
     extra_hosts:
       - host.docker.internal:host-gateway
 
@@ -130,6 +132,36 @@ services:
       - ../frontend:/app
       - /app/node_modules
 
+  # Граф кода (только dev, профиль archviz — не поднимается в make dev): make archviz → https://arch.<domain>
+  # archviz-render строит svg в var/archviz, archviz (nginx) их отдаёт. Кеш Go-модулей — в volume, иначе каждый запуск качает всё.
+  archviz-render:
+    image: ${PROJECT_NAME:-desigram}/archviz
+    build: ./archviz
+    profiles: [archviz]
+    volumes:
+      - ../backend:/src:ro
+      - ../var/archviz:/out
+      - archviz_gomod:/go/pkg/mod
+      - archviz_gocache:/root/.cache
+    networks:
+      - app
+
+  archviz:
+    image: nginx:1.27-alpine
+    profiles: [archviz]
+    volumes:
+      - ../var/archviz:/usr/share/nginx/html:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${PROJECT_NAME:-desigram}
+      - traefik.http.routers.archviz.rule=Host(`arch.${DOMAIN}`)
+      - traefik.http.routers.archviz.entrypoints=websecure
+      - traefik.http.routers.archviz.tls=true
+      - traefik.http.routers.archviz.middlewares=secure-headers@file
+      - traefik.http.services.archviz.loadbalancer.server.port=80
+    networks:
+      - app
+
   jaeger:
     image: jaegertracing/jaeger:latest
     environment:
@@ -191,3 +223,5 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  archviz_gomod:
+  archviz_gocache:
