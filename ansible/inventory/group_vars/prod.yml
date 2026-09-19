@@ -21,6 +21,7 @@ app_fetch: true
 repo_url: "{{ 'https://x-access-token:' ~ vault_github_token ~ '@github.com/snowaa-desigram/desigram.git' if vault_github_token is defined else 'git@github.com:snowaa-desigram/desigram.git' }}"
 
 domain: gram-designer.com
+metrika_id: 112811718                  # Яндекс Метрика (NEXT_PUBLIC_METRIKA_ID во фронте)
 acme_email: "admin@{{ domain }}"        # Let's Encrypt: уведомления об истечении
 core_replicas: 2
 core_worker_replicas: 2

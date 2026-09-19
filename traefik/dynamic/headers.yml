@@ -47,18 +47,19 @@ http:
 
     # CSP фронта. script-src 'unsafe-inline' — Next.js без nonce; следующий шаг — nonce в proxy.ts (см. README «Безопасность»).
     # 'wasm-unsafe-eval' + worker-src blob: — под SQLite WASM (local-first). frame-ancestors 'none' — до Telegram Mini App
-    # (тогда добавить https://web.telegram.org).
+    # (тогда добавить https://web.telegram.org). mc.yandex.* / mc.webvisor.org — Яндекс Метрика (скрипт, вебвизор, iframe).
     app-csp:
       headers:
         customResponseHeaders:
           Content-Security-Policy: >-
             default-src 'self';
-            script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval';
+            script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://mc.yandex.ru https://mc.yandex.com;
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob: https:;
             font-src 'self' data:;
-            connect-src 'self' https://api.{{ env "DOMAIN" }} https://api.{{ env "DOMAIN" }}:{{ env "HTTPS_PORT" }};
+            connect-src 'self' https://api.{{ env "DOMAIN" }} https://api.{{ env "DOMAIN" }}:{{ env "HTTPS_PORT" }} https://mc.yandex.ru https://mc.yandex.com https://mc.webvisor.org;
             worker-src 'self' blob:;
+            frame-src blob: https://mc.yandex.ru https://mc.yandex.com;
             frame-ancestors 'none';
             object-src 'none';
             base-uri 'none';
@@ -71,12 +72,13 @@ http:
         customResponseHeaders:
           Content-Security-Policy: >-
             default-src 'self';
-            script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';
+            script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://mc.yandex.ru https://mc.yandex.com;
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob: https:;
             font-src 'self' data:;
-            connect-src 'self' https://api.{{ env "DOMAIN" }} https://api.{{ env "DOMAIN" }}:{{ env "HTTPS_PORT" }} ws: wss:;
+            connect-src 'self' https://api.{{ env "DOMAIN" }} https://api.{{ env "DOMAIN" }}:{{ env "HTTPS_PORT" }} https://mc.yandex.ru https://mc.yandex.com https://mc.webvisor.org ws: wss:;
             worker-src 'self' blob:;
+            frame-src blob: https://mc.yandex.ru https://mc.yandex.com;
             frame-ancestors 'none';
             object-src 'none';
             base-uri 'none';

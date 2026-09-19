@@ -15,6 +15,8 @@ repo_version: main
 
 domain: gram-designer.localhost
 public_api_url: "https://api.{{ domain }}"
+# Яндекс Метрика: пусто — счётчик не подключается (локалка); prod.yml задаёт номер
+metrika_id: ""
 http_port: 80
 https_port: 443
 acme_email: "admin@{{ domain }}"
