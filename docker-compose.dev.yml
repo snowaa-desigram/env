@@ -89,6 +89,31 @@ services:
     ports:
       - "50052:50051"
 
+  auth:
+    ports:
+      - "8081:8080"
+    depends_on:
+      mailpit:
+        condition: service_healthy
+
+  # Ловушка для писем (dev/e2e): SMTP 1025, UI и REST API 8025. Auth шлёт коды сюда.
+  mailpit:
+    image: axllent/mailpit:latest
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8025/livez"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=desigram
+      - traefik.http.routers.mailpit.rule=Host(`mail.${DOMAIN}`)
+      - traefik.http.routers.mailpit.entrypoints=websecure
+      - traefik.http.routers.mailpit.tls=true
+      - traefik.http.services.mailpit.loadbalancer.server.port=8025
+    networks:
+      - app
+
   frontend:
     build:
       context: ../frontend

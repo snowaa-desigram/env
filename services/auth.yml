@@ -1,0 +1,68 @@
+# Go HTTP-микросервис (go-zero rest): auth. Публичный — через Traefik по api.${DOMAIN}/api/auth/*.
+# Контракт: backend/openapi/auth.yaml. Таблицы auth_* в общей MySQL, миграции — одноразовый auth-migrate.
+x-auth-env: &auth-env
+  MODE: ${GO_MODE:-pro}
+  OTEL_ENDPOINT: ${OTEL_ENDPOINT:-}
+  JWT_SECRET: ${JWT_SECRET}
+  MYSQL_DSN: ${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(database:3306)/${MYSQL_DATABASE}?parseTime=true&charset=utf8mb4&loc=UTC
+  REDIS_ADDR: redis:6379
+  SMTP_HOST: ${SMTP_HOST}
+  SMTP_PORT: ${SMTP_PORT:-25}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM}
+  SMTP_TLS: ${SMTP_TLS:-false}
+
+services:
+  # Применяет миграции (GORM AutoMigrate) и завершается; реплики auth стартуют после него — гонок нет.
+  auth-migrate:
+    image: desigram/auth
+    build: &auth-build
+      context: ../../backend/services/go
+      dockerfile: ../../../enviropment/go/Dockerfile
+      args:
+        ENTRYPOINT_PATH: ./cmd/auth
+        ENTRYPOINT_NAME: auth
+    command: ["./server", "-f", "etc/auth.yaml", "-migrate"]
+    environment: *auth-env
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app
+    restart: "no"
+
+  auth:
+    image: desigram/auth
+    build: *auth-build
+    environment: *auth-env
+    deploy:
+      replicas: ${AUTH_REPLICAS:-1}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      auth-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=desigram
+      # правило длиннее, чем у core (Host && PathPrefix) → приоритет выше: /api/auth/* уходит сюда
+      - traefik.http.routers.auth.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/auth`)
+      - traefik.http.routers.auth.entrypoints=websecure
+      - traefik.http.routers.auth.tls=true
+      - traefik.http.routers.auth.middlewares=auth-ratelimit
+      - traefik.http.services.auth.loadbalancer.server.port=8080
+      - traefik.http.services.auth.loadbalancer.healthcheck.path=/health
+      - traefik.http.services.auth.loadbalancer.healthcheck.interval=10s
+      # Строже, чем на core: перебор паролей/кодов
+      - traefik.http.middlewares.auth-ratelimit.ratelimit.average=${AUTH_RATE_LIMIT:-10}
+      - traefik.http.middlewares.auth-ratelimit.ratelimit.burst=${AUTH_RATE_BURST:-20}
+    networks:
+      - app
+    restart: unless-stopped

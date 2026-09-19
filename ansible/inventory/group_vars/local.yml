@@ -9,4 +9,9 @@ https_port: 8443
 public_api_url: "https://api.{{ domain }}:{{ https_port }}"
 
 go_mode: dev
+
+# письма — в mailpit (docker-compose.dev.yml)
+smtp_host: mailpit
+smtp_port: 1025
+smtp_tls: false
 otel_endpoint: http://jaeger:4318/v1/traces

@@ -10,4 +10,4 @@ scrape_configs:
   # Go-микросервисы (go-zero: Prometheus.Port в etc/<name>.yaml)
   - job_name: go-services
     static_configs:
-      - targets: ["ping:9091"]
+      - targets: ["ping:9091", "auth:9091"]

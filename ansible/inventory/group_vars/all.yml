@@ -22,6 +22,16 @@ telegram_bot_token: "{{ vault_telegram_bot_token | default('') }}"
 rabbitmq_user: desigram
 rabbitmq_password: "{{ vault_rabbitmq_password | default('desigram') }}"
 
+# Auth: access-JWT (HS256) — секрет общий для auth и core, не короче 32 байт (требование php-jwt)
+jwt_secret: "{{ vault_jwt_secret | default('change_me_jwt_secret_at_least_32_bytes') }}"
+# SMTP для кодов подтверждения (prod — реальный сервер; local — mailpit, см. local.yml)
+smtp_host: ""
+smtp_port: 587
+smtp_user: ""
+smtp_password: "{{ vault_smtp_password | default('') }}"
+smtp_from: "no-reply@{{ domain }}"
+smtp_tls: true
+
 # Go-сервисы (go-zero): режим и OTLP-endpoint для трейсов (пусто — выключено)
 go_mode: pro
 otel_endpoint: ""
@@ -32,7 +42,11 @@ core_worker_replicas: 1
 service_replicas:
   ping: 1
   telegram: 1
+  auth: 1
 
 # Rate limit на публичный API (req/s на IP, burst)
 core_rate_limit: 50
 core_rate_burst: 100
+# Rate limit на auth (перебор паролей/кодов) — строже
+auth_rate_limit: 10
+auth_rate_burst: 20

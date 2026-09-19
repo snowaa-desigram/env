@@ -3,6 +3,7 @@
 include:
   - path: services/ping.yml
   - path: services/telegram.yml
+  - path: services/auth.yml
 
 services:
   traefik:
@@ -67,7 +68,7 @@ services:
     networks:
       - app
 
-  # Symfony (DDD) — единственный публичный API. Stateless: масштабируется репликами.
+  # Symfony (DDD) — публичный API (кроме /api/auth/* — это auth). Stateless: масштабируется репликами.
   core:
     image: desigram/core
     build:
@@ -82,6 +83,8 @@ services:
       MESSENGER_TRANSPORT_DSN: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/%2f/messages
       PING_GRPC_ADDR: ping:50051
       TELEGRAM_GRPC_ADDR: telegram:50051
+      # access-JWT выпускает auth (HS256), core проверяет тем же секретом
+      JWT_SECRET: ${JWT_SECRET}
       # браузер ходит с ${DOMAIN} на api.${DOMAIN}
       CORS_ALLOW_ORIGIN: ^https://${DOMAIN}(:[0-9]+)?$$
     deploy:
