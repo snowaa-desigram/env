@@ -1,4 +1,11 @@
 apiVersion: 1
+# Старые datasource'ы без uid (из volume grafana_data прошлых запусков) удаляем по имени, иначе
+# provisioning падает с "data source not found" и Grafana не стартует.
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+  - name: Jaeger
+    orgId: 1
 datasources:
   # uid фиксирован: на него ссылаются дашборды в provisioning/dashboards
   - name: Prometheus
