@@ -40,6 +40,8 @@ services:
       - traefik.http.routers.metrics.service=prometheus@internal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # mkcert-сертификат — только dev: файл монтируется поверх общей папки dynamic/ (в prod — Let's Encrypt)
+      - ./traefik/certs.yml:/etc/traefik/dynamic/certs.yml:ro
       - ./certificate/local.pem:/local.pem:ro
       - ./certificate/local-key.key:/local-key.key:ro
 
