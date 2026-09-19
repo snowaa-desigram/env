@@ -2,6 +2,6 @@ compose_env: prod
 deploy_dir: "/opt/{{ project_name }}"
 app_fetch: true
 
-domain: desigram.com
+domain: gram-designer.com
 core_replicas: 2
 core_worker_replicas: 2

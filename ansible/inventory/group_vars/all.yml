@@ -6,14 +6,14 @@
 #   app_name     — то, что видит пользователь: заголовок сайта, тема писем
 #   domain       — домен (local.yml / prod.yml переопределяют); от него считаются api.<domain>, почта, ACME, CORS
 
-project_name: desigram
-app_name: Desigram
+project_name: gram-designer
+app_name: Gram Designer
 # папка с compose-файлами (в монорепе — сабмодуль enviropment; в CI репозитория env — его корень)
 env_dir: "{{ deploy_dir }}/enviropment"
 repo_url: git@github.com:snowaa-desigram/desigram.git
 repo_version: main
 
-domain: desigram.localhost
+domain: gram-designer.localhost
 public_api_url: "https://api.{{ domain }}"
 http_port: 80
 https_port: 443

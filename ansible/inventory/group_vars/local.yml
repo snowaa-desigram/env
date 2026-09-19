@@ -3,7 +3,7 @@ compose_env: dev
 deploy_dir: "{{ inventory_dir }}/../../.."
 app_fetch: false
 
-domain: desigram.localhost
+domain: gram-designer.localhost
 http_port: 8088
 https_port: 8443
 public_api_url: "https://api.{{ domain }}:{{ https_port }}"
