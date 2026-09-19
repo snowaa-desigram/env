@@ -13,4 +13,5 @@ services:
       replicas: ${TELEGRAM_REPLICAS:-1}
     networks:
       - app
+    security_opt: [no-new-privileges:true]
     restart: unless-stopped

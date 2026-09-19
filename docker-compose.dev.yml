@@ -3,7 +3,8 @@ services:
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      - --providers.file.filename=/etc/traefik/certs.yml
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
@@ -31,6 +32,7 @@ services:
       - traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.tls=true
+      - traefik.http.routers.dashboard.middlewares=secure-headers@file
       - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.metrics.rule=Host(`traefik.${DOMAIN}`) && PathPrefix(`/metrics`)
       - traefik.http.routers.metrics.entrypoints=websecure
@@ -38,7 +40,6 @@ services:
       - traefik.http.routers.metrics.service=prometheus@internal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/certs.yml:/etc/traefik/certs.yml:ro
       - ./certificate/local.pem:/local.pem:ro
       - ./certificate/local-key.key:/local-key.key:ro
 
@@ -79,6 +80,7 @@ services:
       - traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.${DOMAIN}`)
       - traefik.http.routers.rabbitmq.entrypoints=websecure
       - traefik.http.routers.rabbitmq.tls=true
+      - traefik.http.routers.rabbitmq.middlewares=secure-headers@file
       - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
 
   ping:
@@ -110,11 +112,14 @@ services:
       - traefik.http.routers.mailpit.rule=Host(`mail.${DOMAIN}`)
       - traefik.http.routers.mailpit.entrypoints=websecure
       - traefik.http.routers.mailpit.tls=true
+      - traefik.http.routers.mailpit.middlewares=secure-headers@file
       - traefik.http.services.mailpit.loadbalancer.server.port=8025
     networks:
       - app
 
   frontend:
+    labels:
+      - traefik.http.routers.frontend.middlewares=secure-headers@file,app-csp-dev@file
     build:
       context: ../frontend
       dockerfile: ../enviropment/nextjs/Dockerfile.dev
@@ -132,6 +137,7 @@ services:
       - traefik.http.routers.jaeger.rule=Host(`jaeger.${DOMAIN}`)
       - traefik.http.routers.jaeger.entrypoints=websecure
       - traefik.http.routers.jaeger.tls=true
+      - traefik.http.routers.jaeger.middlewares=secure-headers@file
       - traefik.http.services.jaeger.loadbalancer.server.port=16686
     networks:
       - app
@@ -150,6 +156,7 @@ services:
       - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.routers.prometheus.tls=true
+      - traefik.http.routers.prometheus.middlewares=secure-headers@file
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
     networks:
       - app
@@ -169,6 +176,7 @@ services:
       - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)
       - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.tls=true
+      - traefik.http.routers.grafana.middlewares=secure-headers@file
       - traefik.http.services.grafana.loadbalancer.server.port=3000
     networks:
       - app

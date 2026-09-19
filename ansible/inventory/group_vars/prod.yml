@@ -1,7 +1,26 @@
+# ПРОД — единственное место, где описан сервер. Купил VPS → вписал ip и свой публичный ключ → make bootstrap → make deploy.
+# Секреты (пароли БД/RabbitMQ, JWT, SMTP, токен бота) — в inventory/group_vars/prod/vault.yml (ansible-vault, см. vault.yml.example).
+
+# --- сервер ---
+prod_server_ip: 1.2.3.4                 # ← IP от провайдера
+deploy_user: deploy                     # пользователь для ansible/CI (создаётся при bootstrap, root закрывается)
+deploy_ssh_public_keys:                 # ← публичные ключи: твой + ключ CI (GitHub Actions)
+  - "ssh-ed25519 AAAA... you@laptop"
+server_timezone: Europe/Moscow
+swap_size_mb: 2048                      # страховка от OOM при сборке образов; 0 — без swap
+
+ansible_user: "{{ deploy_user }}"       # bootstrap.yml переопределяет на root
+ansible_python_interpreter: auto_silent
+
+# --- приложение ---
 compose_env: prod
 deploy_dir: "/opt/{{ project_name }}"
 app_fetch: true
+# Сервер клонирует репозиторий с сабмодулями. Приватные репо: fine-grained PAT (contents: read на 4 репо) в vault_github_token;
+# без токена — ssh (нужен deploy key на сервере или ForwardAgent).
+repo_url: "{{ 'https://x-access-token:' ~ vault_github_token ~ '@github.com/snowaa-desigram/desigram.git' if vault_github_token is defined else 'git@github.com:snowaa-desigram/desigram.git' }}"
 
 domain: gram-designer.com
+acme_email: "admin@{{ domain }}"        # Let's Encrypt: уведомления об истечении
 core_replicas: 2
 core_worker_replicas: 2

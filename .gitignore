@@ -2,3 +2,4 @@
 *.pem
 *.key
 .DS_Store
+ansible/.vault-pass

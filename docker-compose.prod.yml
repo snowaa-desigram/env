@@ -3,6 +3,9 @@ services:
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --log.level=WARN
 
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
@@ -19,10 +22,17 @@ services:
   core:
     labels:
       - traefik.http.routers.core.tls.certresolver=le
+      - traefik.http.routers.core.middlewares=hsts@file,secure-headers@file,api-headers@file,core-ratelimit
+
+  auth:
+    labels:
+      - traefik.http.routers.auth.tls.certresolver=le
+      - traefik.http.routers.auth.middlewares=hsts@file,secure-headers@file,api-headers@file,api-cors@file,auth-ratelimit
 
   frontend:
     labels:
       - traefik.http.routers.frontend.tls.certresolver=le
+      - traefik.http.routers.frontend.middlewares=hsts@file,secure-headers@file,app-csp@file
 
 volumes:
   letsencrypt:

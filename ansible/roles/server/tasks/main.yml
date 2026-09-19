@@ -1,0 +1,169 @@
+# Базовая настройка и hardening Ubuntu/Debian-сервера: пользователь deploy, SSH только по ключу,
+# firewall, fail2ban, автообновления безопасности, swap, время, лимиты. Идемпотентно.
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ server_timezone }}"
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: [ufw, fail2ban, unattended-upgrades, apt-listchanges, curl, git, htop, jq]
+    update_cache: true
+    cache_valid_time: 3600
+
+# ---- пользователь deploy ----
+- name: Create deploy user
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    groups: [sudo]
+    append: true
+
+- name: Deploy user sudo without password (для docker и ansible)
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/{{ deploy_user }}
+    content: "{{ deploy_user }} ALL=(ALL) NOPASSWD:ALL\n"
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Authorized keys for deploy user
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    key: "{{ item }}"
+  loop: "{{ deploy_ssh_public_keys }}"
+
+# ---- SSH: только ключи, без root ----
+- name: Harden sshd
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    mode: "0644"
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PubkeyAuthentication yes
+      X11Forwarding no
+      MaxAuthTries 4
+      ClientAliveInterval 300
+      ClientAliveCountMax 2
+      AllowUsers {{ deploy_user }}
+    validate: /usr/sbin/sshd -t -f %s
+  notify: restart sshd
+
+# ---- firewall ----
+- name: UFW defaults
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: UFW allow ssh (rate-limited), http, https
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: tcp
+  loop:
+    - { rule: limit, port: "22" }
+    - { rule: allow, port: "80" }
+    - { rule: allow, port: "443" }
+
+- name: UFW enable
+  community.general.ufw:
+    state: enabled
+
+# Docker обходит UFW через свои iptables-цепочки; публикуем наружу только traefik (80/443) — остальные порты
+# в prod-compose не пробрасываются, так что ничего лишнего наружу не торчит. Для параноиков: DOCKER-USER chain.
+
+# ---- fail2ban ----
+- name: fail2ban sshd jail
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.local
+    mode: "0644"
+    content: |
+      [sshd]
+      enabled = true
+      maxretry = 5
+      findtime = 10m
+      bantime = 1h
+  notify: restart fail2ban
+
+- name: fail2ban enabled
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true
+
+# ---- автообновления безопасности ----
+- name: Unattended security upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+
+- name: Unattended upgrades — только security, без автоперезагрузки
+  ansible.builtin.lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^//?Unattended-Upgrade::Automatic-Reboot '
+    line: 'Unattended-Upgrade::Automatic-Reboot "false";'
+
+# ---- swap (страховка от OOM при сборке образов) ----
+- name: Swap file
+  ansible.builtin.command:
+    cmd: "fallocate -l {{ swap_size_mb }}M /swapfile"
+    creates: /swapfile
+  when: swap_size_mb | int > 0
+
+- name: Swap permissions and mkswap
+  ansible.builtin.shell: chmod 600 /swapfile && mkswap /swapfile
+  args:
+    creates: /swapfile.mkswap
+  when: swap_size_mb | int > 0
+  register: mkswap
+  changed_when: mkswap.rc == 0
+
+- name: Swap in fstab and on
+  ansible.posix.mount:
+    src: /swapfile
+    path: none
+    fstype: swap
+    opts: sw
+    state: present
+  when: swap_size_mb | int > 0
+
+- name: Swap on
+  ansible.builtin.command: swapon -a
+  changed_when: false
+  when: swap_size_mb | int > 0
+
+# ---- sysctl ----
+- name: Kernel hardening / network
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+  loop:
+    - { name: net.ipv4.conf.all.rp_filter, value: "1" }
+    - { name: net.ipv4.conf.all.accept_redirects, value: "0" }
+    - { name: net.ipv4.conf.all.send_redirects, value: "0" }
+    - { name: net.ipv4.tcp_syncookies, value: "1" }
+    - { name: kernel.dmesg_restrict, value: "1" }
+    - { name: vm.swappiness, value: "10" }
+    - { name: fs.inotify.max_user_watches, value: "524288" }
+
+# ---- каталог приложения (клонирование и compose — от deploy без sudo) ----
+- name: Deploy dir owned by deploy user
+  ansible.builtin.file:
+    path: "{{ deploy_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"

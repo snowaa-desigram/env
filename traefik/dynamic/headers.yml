@@ -1,0 +1,83 @@
+# Заголовки безопасности и CORS — одно место для всех роутеров (MDN «Practical security implementation guides»).
+# Файл — Go-шаблон Traefik: {{ env "DOMAIN" }} подставляется из окружения контейнера traefik.
+# Кто что получает (labels в compose):
+#   frontend  → secure-headers + app-csp            (dev: app-csp-dev — HMR/eval)
+#   core      → secure-headers + api-headers        (CORS — nelmio в core, чтобы не дублировать заголовки)
+#   auth      → secure-headers + api-headers + api-cors
+#   prod      → + hsts на всех публичных роутерах (docker-compose.prod.yml)
+http:
+  middlewares:
+    # Базовый набор: MIME-sniffing, clickjacking, referrer, изоляция, Permissions-Policy
+    secure-headers:
+      headers:
+        contentTypeNosniff: true            # X-Content-Type-Options: nosniff
+        frameDeny: true                     # X-Frame-Options: DENY (дублирует frame-ancestors для старых браузеров)
+        referrerPolicy: strict-origin-when-cross-origin
+        customResponseHeaders:
+          Cross-Origin-Opener-Policy: same-origin
+          Cross-Origin-Resource-Policy: same-site   # api.<domain> и <domain> — один site
+          Permissions-Policy: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+          X-Permitted-Cross-Domain-Policies: none
+          Server: ""                                 # не раскрывать версию
+
+    # HSTS — только prod: на *.localhost браузер запомнит политику и http-варианты перестанут открываться
+    hsts:
+      headers:
+        stsSeconds: 63072000                # 2 года
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+    # API (core, auth): JSON-ответы никогда не исполняются как документ
+    api-headers:
+      headers:
+        customResponseHeaders:
+          Content-Security-Policy: "default-src 'none'; frame-ancestors 'none'"
+          Cache-Control: "no-store"
+
+    # CORS для auth (Go): фронт с https://<domain> ходит на https://api.<domain>. Core делает то же через nelmio.
+    api-cors:
+      headers:
+        accessControlAllowOriginList:
+          - 'https://{{ env "DOMAIN" }}'
+          - 'https://{{ env "DOMAIN" }}:{{ env "HTTPS_PORT" }}'
+        accessControlAllowMethods: [GET, POST, OPTIONS]
+        accessControlAllowHeaders: [Authorization, Content-Type]
+        accessControlMaxAge: 600
+        addVaryHeader: true
+
+    # CSP фронта. script-src 'unsafe-inline' — Next.js без nonce; следующий шаг — nonce в proxy.ts (см. README «Безопасность»).
+    # 'wasm-unsafe-eval' + worker-src blob: — под SQLite WASM (local-first). frame-ancestors 'none' — до Telegram Mini App
+    # (тогда добавить https://web.telegram.org).
+    app-csp:
+      headers:
+        customResponseHeaders:
+          Content-Security-Policy: >-
+            default-src 'self';
+            script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval';
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data: blob: https:;
+            font-src 'self' data:;
+            connect-src 'self' https://api.{{ env "DOMAIN" }} https://api.{{ env "DOMAIN" }}:{{ env "HTTPS_PORT" }};
+            worker-src 'self' blob:;
+            frame-ancestors 'none';
+            object-src 'none';
+            base-uri 'none';
+            form-action 'self';
+            upgrade-insecure-requests
+
+    # dev: Next.js HMR/React Refresh требуют eval и websocket
+    app-csp-dev:
+      headers:
+        customResponseHeaders:
+          Content-Security-Policy: >-
+            default-src 'self';
+            script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval';
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data: blob: https:;
+            font-src 'self' data:;
+            connect-src 'self' https://api.{{ env "DOMAIN" }} https://api.{{ env "DOMAIN" }}:{{ env "HTTPS_PORT" }} ws: wss:;
+            worker-src 'self' blob:;
+            frame-ancestors 'none';
+            object-src 'none';
+            base-uri 'none';
+            form-action 'self'

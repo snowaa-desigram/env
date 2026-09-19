@@ -27,3 +27,21 @@
     name: docker
     state: started
     enabled: true
+
+- name: Docker daemon — ротация логов, live-restore (контейнеры переживают рестарт демона)
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "20m", "max-file": "5" },
+        "live-restore": true
+      }
+  notify: restart docker
+
+- name: Deploy user in docker group
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: [docker]
+    append: true

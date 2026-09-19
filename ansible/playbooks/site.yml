@@ -1,11 +1,12 @@
-# Полный разворот: сервер с нуля -> рабочий стек
+# Полный разворот: (bootstrap уже сделан) -> hardening актуален -> docker -> код -> стек
 - name: Provision servers
   hosts: prod
   become: true
   roles:
+    - server
     - docker
 
 - name: Deploy application
-  hosts: all
+  hosts: prod
   roles:
     - app

@@ -1,0 +1,10 @@
+# Первый вход на свежий сервер (провайдер даёт root): hardening + docker. Дальше — только пользователем deploy.
+#   make bootstrap                       # ansible_user=root, ключ/пароль провайдера
+- name: Bootstrap fresh server
+  hosts: prod
+  become: true
+  vars:
+    ansible_user: root
+  roles:
+    - server
+    - docker

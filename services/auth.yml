@@ -31,6 +31,7 @@ services:
         condition: service_healthy
     networks:
       - app
+    security_opt: [no-new-privileges:true]
     restart: "no"
 
   auth:
@@ -57,7 +58,7 @@ services:
       - traefik.http.routers.auth.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/api/auth`)
       - traefik.http.routers.auth.entrypoints=websecure
       - traefik.http.routers.auth.tls=true
-      - traefik.http.routers.auth.middlewares=auth-ratelimit
+      - traefik.http.routers.auth.middlewares=secure-headers@file,api-headers@file,api-cors@file,auth-ratelimit
       - traefik.http.services.auth.loadbalancer.server.port=8080
       - traefik.http.services.auth.loadbalancer.healthcheck.path=/health
       - traefik.http.services.auth.loadbalancer.healthcheck.interval=10s
@@ -66,4 +67,5 @@ services:
       - traefik.http.middlewares.auth-ratelimit.ratelimit.burst=${AUTH_RATE_BURST:-20}
     networks:
       - app
+    security_opt: [no-new-privileges:true]
     restart: unless-stopped
